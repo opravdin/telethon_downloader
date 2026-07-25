@@ -5,7 +5,13 @@ on:
     paths:
       - 'Dockerfile'
       - 'src/**'
+      - 'requirements.txt'
       - '.github/workflows/**'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  packages: write
 
 jobs:
   build:
@@ -22,26 +28,18 @@ jobs:
         id: meta
         uses: docker/metadata-action@v4
         with:
-          images: ${{ secrets.DOCKERHUB_USERNAME }}/telethon_downloader
+          images: ghcr.io/${{ github.repository_owner }}/telethon_downloader
           tags: |
             type=raw,value=latest,enable=${{ github.ref_name == 'main' }}
             type=raw,value=${{ env.version }},enable=${{ github.ref_name == 'main' }}
             type=raw,value=${{ github.ref_name }},enable=${{ github.ref_name != 'main' }}
 
-      - name: Docker meta for telegram-downloader
-        id: meta-telegram
-        uses: docker/metadata-action@v4
-        with:
-          images: ${{ secrets.DOCKERHUB_USERNAME }}/telegram-downloader
-          tags: |
-            type=raw,value=develop,enable=${{ github.ref_name == 'develop' }}
-
-
-      - name: Login to Docker Hub
+      - name: Login to GitHub Container Registry
         uses: docker/login-action@v2
         with:
-          username: ${{ secrets.DOCKERHUB_USERNAME }}
-          password: ${{ secrets.DOCKERHUB_TOKEN }}
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v2
@@ -50,8 +48,7 @@ jobs:
         uses: docker/build-push-action@v4
         with:
           context: .
-          platforms: linux/amd64, linux/arm64
+          platforms: linux/amd64
           file: ./Dockerfile
           push: true
           tags: ${{ steps.meta.outputs.tags }}
-
