@@ -32,6 +32,11 @@ services:
       - QBT_PORT=8080                                   # OPTIONAL
       - QBT_USERNAME=admin                              # OPTIONAL
       - QBT_PASSWORD=adminadmin                         # OPTIONAL
+      #- TG_PROXY_TYPE=socks5                           # OPTIONAL (socks5/socks4/http)
+      #- TG_PROXY_HOST=proxy.local                      # OPTIONAL
+      #- TG_PROXY_PORT=1080                             # OPTIONAL
+      #- TG_PROXY_USERNAME=                             # OPTIONAL
+      #- TG_PROXY_PASSWORD=                             # OPTIONAL
     volumes:
       - /path/to/config:/config
       - /path/to/download:/download

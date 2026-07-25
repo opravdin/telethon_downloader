@@ -29,8 +29,33 @@ class EnvConfig:
             self.QBT_PORT = (os.environ.get('QBT_PORT','8080')).strip()
             self.QBT_USERNAME = (os.environ.get('QBT_USERNAME') or "").strip()
             self.QBT_PASSWORD = (os.environ.get('QBT_PASSWORD') or "").strip()
+            self.PROXY_TYPE = (os.environ.get('TG_PROXY_TYPE') or os.environ.get('PROXY_TYPE') or 'socks5').strip().lower()
+            self.PROXY_HOST = (os.environ.get('TG_PROXY_HOST') or os.environ.get('PROXY_HOST') or "").strip()
+            self.PROXY_PORT = (os.environ.get('TG_PROXY_PORT') or os.environ.get('PROXY_PORT') or "").strip()
+            self.PROXY_USERNAME = (os.environ.get('TG_PROXY_USERNAME') or os.environ.get('PROXY_USERNAME') or "").strip()
+            self.PROXY_PASSWORD = (os.environ.get('TG_PROXY_PASSWORD') or os.environ.get('PROXY_PASSWORD') or "").strip()
+            self.PROXY_RDNS = (os.environ.get('TG_PROXY_RDNS') or os.environ.get('PROXY_RDNS') or 'True').strip()
         except Exception as e:
             self.logger.error(f"Error initializing EnvConfig: {e}")
+
+    def get_proxy(self):
+        try:
+            if not self.PROXY_HOST or not self.PROXY_PORT:
+                return None
+            proxy = {
+                'proxy_type': self.PROXY_TYPE,
+                'addr': self.PROXY_HOST,
+                'port': int(self.PROXY_PORT),
+                'rdns': self.PROXY_RDNS.lower() in ('true', '1', 'yes'),
+            }
+            if self.PROXY_USERNAME:
+                proxy['username'] = self.PROXY_USERNAME
+            if self.PROXY_PASSWORD:
+                proxy['password'] = self.PROXY_PASSWORD
+            return proxy
+        except Exception as e:
+            self.logger.error(f"Error building proxy configuration: {e}")
+            return None
 
     def validate_env(self):
         try:

@@ -84,6 +84,18 @@ Enjoy an automated and organized downloading experience with telethon_downloader
 
  **QBT_PASSWORD** [OPTIONAL]: <Password for qBittorrent Web UI authentication.>
 
+ **TG_PROXY_HOST** [OPTIONAL]: <Hostname or IP address of a proxy to use for the Telegram connection. Proxy is enabled only when both TG_PROXY_HOST and TG_PROXY_PORT are set.>
+
+ **TG_PROXY_PORT** [OPTIONAL]: <Port of the proxy.>
+
+ **TG_PROXY_TYPE** [OPTIONAL]: <Proxy protocol: socks5, socks4 or http (default: socks5)>
+
+ **TG_PROXY_USERNAME** [OPTIONAL]: <Username for proxy authentication.>
+
+ **TG_PROXY_PASSWORD** [OPTIONAL]: <Password for proxy authentication.>
+
+ **TG_PROXY_RDNS** [OPTIONAL]: <Resolve hostnames through the proxy (default: True)>
+
  **PUID** [OPTIONAL]: <Unique identification of the user in the system, used for assigning permissions.> 
 
  **PGID** [OPTIONAL]: <Unique identifier for a group of users, used for assigning specific permissions to the group.> 
@@ -293,6 +305,11 @@ services:
       - QBT_PORT=8080                                   # OPTIONAL
       - QBT_USERNAME=admin                              # OPTIONAL
       - QBT_PASSWORD=adminadmin                         # OPTIONAL
+      #- TG_PROXY_TYPE=socks5                           # OPTIONAL (socks5/socks4/http)
+      #- TG_PROXY_HOST=proxy.local                      # OPTIONAL
+      #- TG_PROXY_PORT=1080                             # OPTIONAL
+      #- TG_PROXY_USERNAME=                             # OPTIONAL
+      #- TG_PROXY_PASSWORD=                             # OPTIONAL
     volumes:
       - /path/to/config:/config
       - /path/to/download:/download

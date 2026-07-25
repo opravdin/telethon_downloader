@@ -64,8 +64,12 @@ class TelethonDownloaderBot:
             self.AUTHORIZED_USER_IDS = [int(uid.strip()) for uid in self.env_config.AUTHORIZED_USER_ID.split(',')]
             self.logger.info("API credentials and authorized users set.")
 
-            self.bot = TelegramClient('bot', self.API_ID, self.API_HASH)
-            self.logger.info("TelegramClient initialized.")
+            proxy = self.env_config.get_proxy()
+            self.bot = TelegramClient('bot', self.API_ID, self.API_HASH, proxy=proxy)
+            if proxy:
+                self.logger.info(f"TelegramClient initialized with {proxy['proxy_type']} proxy {proxy['addr']}:{proxy['port']}.")
+            else:
+                self.logger.info("TelegramClient initialized.")
 
             self.config_manager = ConfigManager(self.env_config.PATH_CONFIG, self.logger, self.env_config.PUID, self.env_config.PGID)
             self.logger.info("ConfigManager initialized.")
