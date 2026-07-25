@@ -1,0 +1,84 @@
+name: Sync upstream
+
+on:
+  schedule:
+    - cron: '17 4 * * *'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+  actions: write
+  issues: write
+
+concurrency:
+  group: sync-upstream
+
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+    env:
+      UPSTREAM_REPO: jsavargas/telethon_downloader
+      UPSTREAM_BRANCH: main
+      GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Merge upstream into main
+        id: merge
+        run: |
+          set -euo pipefail
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git remote add upstream "https://github.com/${UPSTREAM_REPO}.git"
+          git fetch --no-tags upstream "${UPSTREAM_BRANCH}"
+          before=$(git rev-parse HEAD)
+          if git merge --no-edit "upstream/${UPSTREAM_BRANCH}"; then
+            after=$(git rev-parse HEAD)
+            if [ "$before" = "$after" ]; then
+              echo "status=uptodate" >> "$GITHUB_OUTPUT"
+              echo "Already up to date with ${UPSTREAM_REPO}@${UPSTREAM_BRANCH}." >> "$GITHUB_STEP_SUMMARY"
+            else
+              git push origin HEAD:"${GITHUB_REF_NAME}"
+              echo "status=merged" >> "$GITHUB_OUTPUT"
+              {
+                echo "Merged ${UPSTREAM_REPO}@${UPSTREAM_BRANCH}:"
+                echo
+                git log --oneline "${before}..${after}"
+              } >> "$GITHUB_STEP_SUMMARY"
+            fi
+          else
+            git merge --abort
+            echo "status=conflict" >> "$GITHUB_OUTPUT"
+            echo "Merge conflicts - nothing pushed." >> "$GITHUB_STEP_SUMMARY"
+          fi
+
+      - name: Rebuild image
+        if: steps.merge.outputs.status == 'merged'
+        run: gh workflow run docker-ci.yml --ref "${GITHUB_REF_NAME}"
+
+      - name: Open conflict issue
+        if: steps.merge.outputs.status == 'conflict'
+        run: |
+          set -euo pipefail
+          title="Upstream sync needs a manual merge"
+          if gh issue list --state open --json title --jq '.[].title' | grep -Fxq "$title"; then
+            echo "Issue already open, skipping."
+            exit 0
+          fi
+          cat > /tmp/conflict.md <<EOF
+          Automatic merge of \`${UPSTREAM_REPO}@${UPSTREAM_BRANCH}\` into \`${GITHUB_REF_NAME}\` hit conflicts, so nothing was pushed and the image was not rebuilt. The running image keeps the last good build.
+
+          Resolve locally:
+
+          \`\`\`
+          git remote add upstream https://github.com/${UPSTREAM_REPO}.git
+          git fetch upstream && git merge upstream/${UPSTREAM_BRANCH}
+          \`\`\`
+
+          Our changes on top of upstream live in \`src/env_config.py\`, \`src/app.py\` and \`requirements.txt\` (proxy support), plus \`.github/workflows/docker-ci.yml\` (publishes to GHCR instead of Docker Hub).
+
+          Run: ${GITHUB_SERVER_URL}/${GITHUB_REPOSITORY}/actions/runs/${GITHUB_RUN_ID}
+          EOF
+          gh issue create --title "$title" --body-file /tmp/conflict.md
